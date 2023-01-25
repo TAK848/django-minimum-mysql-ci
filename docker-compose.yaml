@@ -10,7 +10,6 @@ services:
     image: mysql:8.0
     volumes:
       - mysql-ci-db-data:/var/lib/mysql
-      - ./mysql/initdb.d:/docker-entrypoint-initdb.d
     env_file:
       - .env
     ports:

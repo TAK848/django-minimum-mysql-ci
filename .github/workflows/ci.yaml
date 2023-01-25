@@ -1,0 +1,73 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  lint-and-format:
+    name: Check Python lint and format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+      - name: Install dependencies
+        run: |
+          pip install -U pip setuptools wheel
+          pip install -r requirements.txt
+      - name: Lint with flake8
+        run: flake8
+      - name: Check format
+        run: |
+          isort --check-only --diff --color .
+          black --check --diff --color .
+
+  django-test:
+    name: Django Test
+    runs-on: ubuntu-latest
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: db
+      MYSQL_TEST_DATABASE: test
+      MYSQL_USER: test
+      MYSQL_PASSWORD: test
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ env.MYSQL_ROOT_PASSWORD }}
+          MYSQL_DATABASE: ${{ env.MYSQL_DATABASE }}
+          MYSQL_USER: ${{ env.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ env.MYSQL_PASSWORD }}
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=1s
+          --health-timeout=1s
+          --health-retries=3
+          --health-start-period=3s
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+      - name: Install dependencies
+        run: |
+          pip install -U pip setuptools wheel
+          pip install -r requirements.txt
+      - name: Check Migration
+        run: python manage.py makemigrations --check
+      - name: Django check
+        run: python manage.py check
+      - name: Grant test database access
+        run: |
+          mysql -h$MYSQL_HOST -uroot -p$MYSQL_ROOT_PASSWORD -e "grant all on ${MYSQL_TEST_DATABASE}.* to ${MYSQL_USER}@'%';"
+      - name: Run Django Unit Test
+        run: python manage.py test
