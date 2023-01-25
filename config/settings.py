@@ -86,6 +86,12 @@ DATABASES = {
         "NAME": env("MYSQL_DATABASE"),
         "USER": env("MYSQL_USER"),
         "PASSWORD": env("MYSQL_PASSWORD"),
+        "TEST": {
+            "NAME": env("MYSQL_TEST_DATABASE", default="test_db"),
+        },
+        "OPTIONS": {
+            "charset": "utf8mb4",
+        },
     }
 }
 
